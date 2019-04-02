@@ -3,7 +3,7 @@ import numpy.random as npr
 
 
 class DataStreamer:
-  def __init__(self, x_train, y_train, batch_size=128, num_classes=None):
+  def __init__(self, x_train, y_train=None, batch_size=128, num_classes=None):
       rng = npr.RandomState(0)
 
       num_train = len(x_train)
@@ -19,10 +19,13 @@ class DataStreamer:
           for i in range(num_batches):
             batch_idx = perm[i * batch_size:(i + 1) * batch_size]
             batch_x = x_train[batch_idx]
-            batch_y = y_train[batch_idx]
-            if num_classes:
-              batch_y = Id[y_train[batch_idx].astype(int), :]
-            yield batch_x, batch_y
+            if y_train:
+              batch_y = y_train[batch_idx]
+              if num_classes:
+                batch_y = Id[y_train[batch_idx].astype(int), :]
+              yield batch_x, batch_y
+            else:
+              yield batch_x
       
       self.num_train = num_train
       self.num_batches = num_batches

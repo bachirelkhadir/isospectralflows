@@ -153,6 +153,8 @@ def update(i, opt_state, batch):
 
 print("Gettting batches")
 data_streamer = DataStreamer(x_train, y_train, batch_size=batch_size, num_classes=num_classes)
+data_streamer_test = DataStreamer(x_test, y_test, batch_size=batch_size, num_classes=num_classes)
+
 itercount = itertools.count()
 print("Starting logger")
 logger = tensorboard_logging.create_logger(tag=tag.format(n_params=n_params), log_dir=log_dir)
@@ -177,7 +179,9 @@ for epoch in range(num_epochs):
       
       # logger
       loss_i = loss(params, batch)
-      acc_i = accuracy(params, batch)
+      # evaluate accuracy on test batch
+      batch_test = next(data_streamer.stream_iter)
+      acc_i = accuracy(params, batch_test)
       cum_loss.append(loss_i)
       cum_acc.append(acc_i)
       logger.log_scalar('accuracy', acc_i, step=i+1)
