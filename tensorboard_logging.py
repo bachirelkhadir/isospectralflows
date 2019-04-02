@@ -14,7 +14,7 @@ import datetime
 
 LOG_DIR = '/tmp/checkpoints/'
 
-def create_logger(tag=''):
+def create_logger(tag='', log_dir=LOG_DIR):
   tmp_name = os.path.join(LOG_DIR, tag+datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
   print("Writing to", tmp_name)
   os.mkdir(tmp_name)    

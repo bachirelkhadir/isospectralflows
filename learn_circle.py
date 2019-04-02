@@ -13,11 +13,12 @@ parser.add_argument('--batch_size', dest='batch_size',
 parser.add_argument('--tag', dest='tag', 
   type=str, default="no_tag_{n_params}_params@",
   help='Tag for logging with tensorboard')
-
 parser.add_argument('--layers', dest='layers_str', 
   type=str, default="[Dense(2),Softmax]",
   help="Use ODE layer")
-
+parser.add_argument('--log_dir', dest='log_dir', 
+  type=str, default="/tmp/checkpoints/",
+  help="Directory where to store tensorboard logs.")
 
 args = parser.parse_args()
 print(args)
@@ -29,6 +30,8 @@ num_epochs = args.num_epochs
 batch_size = args.batch_size
 tag = args.tag
 layers_str = args.layers_str
+log_dir = args.log_dir
+
 
 # Imports
 import datetime
@@ -168,7 +171,7 @@ data_streamer = DataStreamer(x_train, y_train, batch_size=batch_size, num_classe
 itercount = itertools.count()
 
 print("Starting logger")
-logger = tensorboard_logging.create_logger(tag=tag.format(n_params=n_params))
+logger = tensorboard_logging.create_logger(tag=tag.format(n_params=n_params), log_dir=log_dir)
 
 
 print("Starting training...")
