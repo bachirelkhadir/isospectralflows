@@ -20,12 +20,12 @@ class DataStreamer:
             batch_idx = perm[i * batch_size:(i + 1) * batch_size]
             batch_x = x_train[batch_idx]
             if y_train is None:
+              yield batch_x
+            else:
               batch_y = y_train[batch_idx]
               if num_classes:
                 batch_y = Id[y_train[batch_idx].astype(int), :]
               yield batch_x, batch_y
-            else:
-              yield batch_x
       
       self.num_train = num_train
       self.num_batches = num_batches
