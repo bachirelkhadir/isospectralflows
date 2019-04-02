@@ -19,6 +19,13 @@ parser.add_argument('--layers', dest='layers_str',
 parser.add_argument('--log_dir', dest='log_dir', 
   type=str, default="/tmp/checkpoints/",
   help="Directory where to store tensorboard logs.")
+parser.add_argument('--log_eps', dest='log_eps', 
+  type=float, default=1e-2,
+  help='A constant to add the inputs of np.log to avoid log(0).')
+parser.add_argument('--l2_reg', dest='l2_reg', 
+  type=float, default=0.,
+  help='Multiplies the l2 norm of the parameter vectors and added to the objective function.')
+
 
 args = parser.parse_args()
 print(args)
@@ -31,7 +38,8 @@ batch_size = args.batch_size
 tag = args.tag
 layers_str = args.layers_str
 log_dir = args.log_dir
-
+log_eps = args.log_eps
+l2_reg = args.l2_reg
 
 # Imports
 import datetime
@@ -42,13 +50,14 @@ import keras
 import matplotlib.pyplot as plt
 import numpy as onp
 import numpy.random as npr
-from ode_stax import *
 import os
 import pickle
 import tarfile
 import tensorboard_logging
 import time
 import zipfile 
+
+from ode_stax import *
 
 from data_streamer import DataStreamer
 from jax import device_put
@@ -90,22 +99,21 @@ print(y_train.shape[0], 'y train samples')
 # Build NN
 @jit
 def vec(params):
-  """Stack parameters in a big vector"""
+  """Stack parameters in a big vector."""
   
   leaves, _ = tree_flatten(params)
   return np.hstack([x.flatten() for x in leaves])
 
 
-def cross_entropy(a, b):  
-  eps = 1e-2
-  return - np.sum(a * np.log(b+eps))
+def cross_entropy(a, b):
+  return - np.sum(a * np.log(b+log_eps))
 
 
 @jit
-def loss(params, batch, reg=0.):
+def loss(params, batch):
   inputs, targets = batch
   preds = predict(params, inputs, rng=key)
-  return cross_entropy(targets, preds) + reg * np.linalg.norm(vec(params))
+  return cross_entropy(targets, preds) + l2_reg * np.linalg.norm(vec(params))
 
 
 @jit
@@ -116,13 +124,14 @@ def accuracy(params, batch):
   return np.mean(predicted_class == target_class)
 
 
-print("Evaluating layers from string")
+print("Evaluating layers from string:", layers_str)
 layers = eval(layers_str)
-
 init_random_params, predict = stax.serial(*layers)
 
 
-# Plotting helpers
+################
+# Plot helpers
+################
 
 @fig_to_data
 def plot_output_layer(params, predict_fun):
@@ -153,63 +162,57 @@ def plot_N(params):
 # Optimizer
 ################
 
-
+# start adam optimizer and initialize parameters
 opt_init, opt_update = optimizers.adam(step_size)
+out_shape, init_params = init_random_params((-1,) + x_train.shape[1:])
+opt_state = opt_init(init_params)
+n_params = len(vec(init_params))
 
+# helper function to perform a one step update of the parameters
 @jit
 def update(i, opt_state, batch):
   params = optimizers.get_params(opt_state)
   return opt_update(i, grad(loss)(params, batch), opt_state)
 
-out_shape, init_params = init_random_params((-1,) + x_train.shape[1:])
-opt_state = opt_init(init_params)
-n_params = len(vec(init_params))
-
 
 print("Gettting batches")
 data_streamer = DataStreamer(x_train, y_train, batch_size=batch_size, num_classes=2)
 itercount = itertools.count()
-
 print("Starting logger")
 logger = tensorboard_logging.create_logger(tag=tag.format(n_params=n_params), log_dir=log_dir)
-
-
 print("Starting training...")
 print("Number of params %.4fk" % (n_params/1e3))
 
+# Start iterating
 print("|".join(map(lambda s: s.center(10, ' '), "Epoch,Loss,Accuracy,dt".split(","))))
-
-
 for epoch in range(num_epochs):
     start_time = time.time()
+
+    # loss and accuracy for each minibatch
     cum_loss = []
     cum_acc = []
+
+    # runs through all the data
     for _ in range(data_streamer.num_batches):
       batch = next(data_streamer.stream_iter)
       i = next(itercount)
       opt_state = update(i, opt_state, batch)
       params = optimizers.get_params(opt_state)
       
-      if True:
-        # logger
-        loss_i = loss(params, batch)
-        acc_i = accuracy(params, batch)
-        cum_loss.append(loss_i)
-        cum_acc.append(acc_i)
-        logger.log_scalar('accuracy', acc_i, step=i+1)
-        logger.log_scalar('loss', loss_i, step=i+1)
-        imgs = [
-            plot_output_layer(params, predict),
-            #plot_N(params)
-        ]
-        logger.log_images('ouput', imgs, step=i+1)
-      
-      
+      # logger
+      loss_i = loss(params, batch)
+      acc_i = accuracy(params, batch)
+      cum_loss.append(loss_i)
+      cum_acc.append(acc_i)
+      logger.log_scalar('accuracy', acc_i, step=i+1)
+      logger.log_scalar('loss', loss_i, step=i+1)
+      imgs = [
+          plot_output_layer(params, predict),
+          #plot_N(params)
+      ]
+      logger.log_images('output', imgs, step=i+1)
+            
     epoch_time = time.time() - start_time
-
-    
-    train_loss = cum_loss
-    #test_acc = accuracy(params, (x_test, y_test))
     print("{:10}|{:10.5f}|{:10.5f}|{:10.5f}".format(epoch, onp.mean(cum_loss),
                                                   onp.mean(cum_acc),
                                                   epoch_time))  

@@ -3,6 +3,13 @@ import jax.numpy as np
 
 
 def euler_odeint(f, x0, T=1., num_steps=100):
+  """Integrates the function f between 0 and T starting from x0
+  using Euler's method
+
+  Returns:
+    x(t): array of the same size as x0
+  """
+
   dt = T/ num_steps
   xi = x0
   for i in range(num_steps):
@@ -11,7 +18,10 @@ def euler_odeint(f, x0, T=1., num_steps=100):
 
 
 def DenseODE(W_init=glorot(), b_init=randn()):
-  """f(x) = W2 σ(W1x + b1) + b2"""
+  """Dense Ode Layer
+  This layer takes as input an ndarray `x0`, runs the ode 
+  `x_dot = x`, where `f(x) = W2 σ(W1x + b1) + b2` and returns `x(T)`.
+  """
 
   def init_fun(input_shape):
     output_shape = input_shape
@@ -32,7 +42,15 @@ def DenseODE(W_init=glorot(), b_init=randn()):
 
 
 def IsospectralODE(matrix_size, activation=None, W_init=glorot(), b_init=randn()):
-  """H0 = W2 σ(W1x + b1) + b2, H = [[H, N], H]"""
+  """Isospectral ODE Layer.
+  
+  - Maps the input `x` to a `matrix_size x matrix_size` matrix `H` using a fully connected layer.
+  - Run an isospectral flow (i.e. `H_dot =  H = [[H, N], H]`) starting from `H`
+  - Returns H(T).
+  
+  In other words,  H0 = W2 σ(W1x + b1) + b2 and H_dot = [[H, N], H].
+  """
+
   matrix_len = matrix_size*matrix_size
   if activation == None:
     activation = lambda x: np.maximum(x, 0)

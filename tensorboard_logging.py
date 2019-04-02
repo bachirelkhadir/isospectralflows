@@ -4,12 +4,16 @@ License: Copyleft
 """
 __author__ = "Michael Gygli"
 
-import tensorflow as tf
-from io import BytesIO
+import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import datetime
+import os
+import scipy.misc
+import tensorflow as tf
+import tensorflow as tf
+
+from io import BytesIO
 
 
 LOG_DIR = '/tmp/checkpoints/'
@@ -97,6 +101,28 @@ class Logger(object):
         summary = tf.Summary(value=[tf.Summary.Value(tag=tag, histo=hist)])
         self.writer.add_summary(summary, step)
         self.writer.flush()
+
+
+def save_images_from_event(fn, tag, output_dir='./'):
+    assert(os.path.isdir(output_dir))
+
+    image_str = tf.placeholder(tf.string)
+    im_tf = tf.image.decode_image(image_str)
+    list_image_paths = []
+    sess = tf.InteractiveSession()
+    with sess.as_default():
+        count = 0
+        for e in tf.train.summary_iterator(fn):
+            for v in e.summary.value:
+              #print(v.tag)
+              if v.tag == tag:
+                  im = im_tf.eval({image_str: v.image.encoded_image_string})
+                  output_fn = os.path.realpath('{}/image_{:05d}.png'.format(output_dir, count))
+                  list_image_paths.append(output_fn)
+                  # print("Saving '{}'".format(output_fn))
+                  scipy.misc.imsave(output_fn, im)
+                  count += 1  
+    return list_image_paths
 
 # Test logger
 # import tensorboard_logging
