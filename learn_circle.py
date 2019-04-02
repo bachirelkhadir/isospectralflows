@@ -77,7 +77,7 @@ npr.seed(0)
 
 # Download datasets
 print("Downloading data")
-x_train = npr.randn(20, 2)
+x_train = npr.randn(5000, 2)
 y_train = (np.linalg.norm(x_train, axis=1) < 1).astype(float)
 print('x_train shape:', x_train.shape)
 print(x_train.shape[0], 'x train samples')
