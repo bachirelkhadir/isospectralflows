@@ -89,8 +89,8 @@ npr.seed(0)
 # Download datasets
 # The data, split between train and test sets:
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-x_train = (x_train / 250.).astype(np.float64).reshape(-1, 28, 28, 1)
-x_test = (x_test / 250.).astype(np.float64).reshape(-1, 28, 28, 1)
+x_train = (x_train / 250.).astype(np.float64)#.reshape(-1, 28, 28, 1)
+x_test = (x_test / 250.).astype(np.float64)#.reshape(-1, 28, 28, 1)
 num_classes = 10
 print('x_train shape:', x_train.shape)
 print(x_train.shape[0], 'train samples')
