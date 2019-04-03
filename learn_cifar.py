@@ -93,6 +93,8 @@ x_train = (x_train / 250.).astype(np.float64)#.reshape(-1, 28, 28, 1)
 x_test = (x_test / 250.).astype(np.float64)#.reshape(-1, 28, 28, 1)
 num_classes = 10
 print('x_train shape:', x_train.shape)
+print('y_train shape:', y_train.shape)
+
 print(x_train.shape[0], 'train samples')
 print(x_test.shape[0], 'test samples')
 

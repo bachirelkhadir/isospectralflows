@@ -25,7 +25,7 @@ class DataStreamer:
               batch_y = y_train[batch_idx]
               if num_classes:
                 batch_y = Id[y_train[batch_idx].astype(int), :]
-              yield batch_x, batch_y
+              yield batch_x, batch_y.squeeze()
       
       self.num_train = num_train
       self.num_batches = num_batches
