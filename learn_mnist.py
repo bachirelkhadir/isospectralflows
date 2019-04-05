@@ -158,7 +158,6 @@ data_streamer_test = DataStreamer(x_test, y_test, batch_size=batch_size, num_cla
 itercount = itertools.count()
 print("Starting logger")
 logger = tensorboard_logging.create_logger(tag=tag.format(n_params=n_params), log_dir=log_dir)
-print("Starting training...")
 print("Number of params %.4fk" % (n_params/1e3))
 
 # Start iterating
