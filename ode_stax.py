@@ -2,25 +2,67 @@ from jax.experimental.stax import glorot, randn
 import jax.numpy as np
 
 
-def euler_odeint(f, x0, T=1., num_steps=100):
+def odeint(f, x0, T=1., num_steps=100, method='euler'):
   """Integrates the function f between 0 and T starting from x0
-  using Euler's method
+  using Euler's or RK4 method.
 
   Returns:
     x(t): array of the same size as x0
   """
 
+
+  # TODO: handle non-autonomous systems, i.e. the case where f
+  # depends on t
+
+
+  def rk4_integrator(xi, ti, dt):
+    xi = x0
+    dydx = lambda t, x: f(x)
+    k1 = dydx(ti, xi)
+    k2 = dydx(ti + 0.5 * dt, xi + 0.5 * k1) 
+    k3 = dydx(ti + 0.5 * dt, xi + 0.5 * k2) 
+    k4 = dydx(ti + dt, xi + k3) 
+    return dt * (1.0 / 6.0)*(k1 + 2 * k2 + 2 * k3 + k4) 
+
+  euler_integrator = lambda xi, ti, dt: dt * f(xi)
+
+  integrator = rk4_integrator if method == 'rk4' else euler_integrator
+
   dt = T/ num_steps
   xi = x0
-  for i in range(num_steps):
-    xi = xi + f(xi)*dt
+
+  for i, ti in enumerate(np.linspace(0, T, num_steps)):
+    xi = xi + integrator(xi, ti, dt)
   return xi
+
+
+def test_odeint():
+  from scipy import integrate
+  test_f = [
+    lambda x: np.array([-x[1], x[0]])
+  ]
+
+  x0 = np.array([1., 1.])
+  T = 1.
+  scipy_results = np.array([
+    integrate.odeint(lambda x,t: f(x), x0, [0, T])[-1] 
+    for f in test_f])
+  rk4_results = np.array([
+      odeint(f, x0, T=T, method='rk4')
+    for f in test_f])
+  euler_results = np.array([
+      odeint(f, x0, T=T, method='euler')
+    for f in test_f])
+  print("scipy", scipy_results)
+  print("rk4", rk4_results)
+  print("euler", euler_results)
+  return
 
 
 def DenseODE(W_init=glorot(), b_init=randn()):
   """Dense Ode Layer
   This layer takes as input an ndarray `x0`, runs the ode 
-  `x_dot = x`, where `f(x) = W2 σ(W1x + b1) + b2` and returns `x(T)`.
+  `x_dot = f(x)`, where `f(x) = W2 σ(W1x + b1) + b2` and returns `x(T)`.
   """
 
   def init_fun(input_shape):
