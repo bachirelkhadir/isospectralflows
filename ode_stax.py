@@ -3,7 +3,7 @@ import jax.numpy as np
 from jax import jit
 
 
-def odeint(f, x0, T=1., num_steps=100, method='euler'):
+def odeint(f, x0, T=1., num_steps=100, method='rk4'):
   """Integrates the function f between 0 and T starting from x0
   using Euler's or RK4 method.
 
