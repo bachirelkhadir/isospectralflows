@@ -164,7 +164,7 @@ def plot_N(params):
 
 # start adam optimizer and initialize parameters
 opt_init, opt_update = optimizers.adam(step_size)
-out_shape, init_params = init_random_params((-1,) + x_train.shape[1:])
+out_shape, init_params = init_random_params(input_shape=(-1,) + x_train.shape[1:], rng=key)
 opt_state = opt_init(init_params)
 n_params = len(vec(init_params))
 
