@@ -77,7 +77,7 @@ def DenseODE(W_init=glorot(), b_init=randn()):
   def init_fun(rng, input_shape):
     output_shape = input_shape
     out_dim = input_shape[-1]
-    W1, b1 = W_init(rng, (input_shape[-1], out_dim)), b_init((rng, out_dim,))
+    W1, b1 = W_init(rng, (input_shape[-1], out_dim)), b_init(rng, (out_dim,))
     W2, b2 = W_init(rng, (input_shape[-1], out_dim)), b_init(rng, (out_dim,))
     return output_shape, (W1, b1, W2, b2)
   
